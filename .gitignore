@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+.vite/
+.vite-temp/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.env
+!*.env.example
+deploy/docker/env/*.env
+!deploy/docker/env/*.env.example
+deploy/docker/hermes/*.env
+!deploy/docker/hermes/*.env.example
+
+# Runtime data and backups
+deploy/docker/data/
+deploy/docker/backups/
+*.sqlite
+*.db
+*.tgz
+*.tar
+*.tar.gz
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

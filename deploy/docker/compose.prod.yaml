@@ -1,0 +1,52 @@
+services:
+  caddy:
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST:?Set PUBLIC_HOST for production}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+
+  personal-api:
+    image: ${PERSONAL_API_IMAGE:?Set PERSONAL_API_IMAGE for production}
+    env_file:
+      - path: ./env/personal-api.env
+        required: false
+
+  personal-api-migrate:
+    image: ${PERSONAL_API_IMAGE:?Set PERSONAL_API_IMAGE for production}
+    env_file:
+      - path: ./env/personal-api.env
+        required: false
+
+  personal-web:
+    image: ${PERSONAL_WEB_IMAGE:?Set PERSONAL_WEB_IMAGE for production}
+    env_file:
+      - path: ./env/personal-web.env
+        required: false
+
+  personal-mcp:
+    image: ${PERSONAL_MCP_IMAGE:?Set PERSONAL_MCP_IMAGE for production}
+    env_file:
+      - path: ./env/personal-mcp.env
+        required: false
+
+  hermes:
+    image: ${HERMES_IMAGE:?Set HERMES_IMAGE for production}
+    env_file:
+      - path: ./hermes/hermes.env
+        required: false
+
+  librechat:
+    image: ${LIBRECHAT_IMAGE:-registry.librechat.ai/danny-avila/librechat-dev:latest}
+    env_file:
+      - path: ./env/librechat.env
+        required: false
+
+  postgres:
+    ports: []
+
+  mongo:
+    ports: []
+
+  meilisearch:
+    ports: []

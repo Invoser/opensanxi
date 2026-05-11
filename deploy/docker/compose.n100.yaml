@@ -1,0 +1,45 @@
+services:
+  caddy:
+    ports:
+      - "${HTTP_PORT:-3080}:80"
+
+  personal-api:
+    build:
+      context: ../../apps/api
+      dockerfile: Dockerfile
+    image: ${PERSONAL_API_IMAGE:-opensanxi-api:n100}
+
+  personal-api-migrate:
+    build:
+      context: ../../apps/api
+      dockerfile: Dockerfile
+    image: ${PERSONAL_API_IMAGE:-opensanxi-api:n100}
+
+  personal-web:
+    build:
+      context: ../../apps/web
+      dockerfile: Dockerfile
+    image: ${PERSONAL_WEB_IMAGE:-opensanxi-web:n100}
+
+  personal-mcp:
+    build:
+      context: ../../apps/mcp-server
+      dockerfile: Dockerfile
+    image: ${PERSONAL_MCP_IMAGE:-opensanxi-mcp:n100}
+
+  llm-bridge:
+    build:
+      context: ../../apps/llm-bridge
+      dockerfile: Dockerfile
+    image: ${LLM_BRIDGE_IMAGE:-opensanxi-llm-bridge:n100}
+
+  mongo:
+    image: mongo:4.4
+    healthcheck:
+      test: ["CMD", "mongo", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.12

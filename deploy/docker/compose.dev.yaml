@@ -1,0 +1,82 @@
+services:
+  caddy:
+    ports:
+      - "${DEV_HTTP_PORT:-8088}:80"
+      - "${DEV_HTTPS_PORT:-8443}:443"
+
+  personal-api:
+    build:
+      context: ${PERSONAL_API_CONTEXT:-../../apps/api}
+      dockerfile: ${PERSONAL_API_DOCKERFILE:-Dockerfile}
+    image: ${PERSONAL_API_IMAGE:-opensanxi-api:dev}
+    environment:
+      NODE_ENV: development
+    ports:
+      - "${PERSONAL_API_HOST_PORT:-8080}:${PERSONAL_API_PORT:-8080}"
+    volumes:
+      - ${PERSONAL_API_CONTEXT:-../../apps/api}:/workspace/personal-api
+
+  personal-web:
+    build:
+      context: ${PERSONAL_WEB_CONTEXT:-../../apps/web}
+      dockerfile: ${PERSONAL_WEB_DOCKERFILE:-Dockerfile}
+    image: ${PERSONAL_WEB_IMAGE:-opensanxi-web:dev}
+    environment:
+      NODE_ENV: development
+    ports:
+      - "${PERSONAL_WEB_HOST_PORT:-3000}:${PERSONAL_WEB_PORT:-3000}"
+    volumes:
+      - ${PERSONAL_WEB_CONTEXT:-../../apps/web}:/workspace/personal-web
+
+  personal-mcp:
+    build:
+      context: ${PERSONAL_MCP_CONTEXT:-../../apps/mcp-server}
+      dockerfile: ${PERSONAL_MCP_DOCKERFILE:-Dockerfile}
+    image: ${PERSONAL_MCP_IMAGE:-opensanxi-mcp:dev}
+    environment:
+      NODE_ENV: development
+    ports:
+      - "${PERSONAL_MCP_HOST_PORT:-8787}:${PERSONAL_MCP_PORT:-8787}"
+    volumes:
+      - ${PERSONAL_MCP_CONTEXT:-../../apps/mcp-server}:/workspace/personal-mcp
+
+  llm-bridge:
+    build:
+      context: ${LLM_BRIDGE_CONTEXT:-../../apps/llm-bridge}
+      dockerfile: ${LLM_BRIDGE_DOCKERFILE:-Dockerfile}
+    image: ${LLM_BRIDGE_IMAGE:-opensanxi-llm-bridge:dev}
+    environment:
+      NODE_ENV: development
+    ports:
+      - "${LLM_BRIDGE_HOST_PORT:-8765}:${LLM_BRIDGE_PORT:-8765}"
+    volumes:
+      - ${LLM_BRIDGE_CONTEXT:-../../apps/llm-bridge}:/workspace/personal-llm-bridge
+
+  hermes:
+    build:
+      context: ${HERMES_CONTEXT:-../hermes}
+      dockerfile: ${HERMES_DOCKERFILE:-Dockerfile}
+    image: ${HERMES_IMAGE:-hermes-agent:dev}
+    ports:
+      - "${HERMES_API_HOST_PORT:-8765}:${API_SERVER_PORT:-8765}"
+      - "${HERMES_DASHBOARD_HOST_PORT:-9119}:9119"
+    volumes:
+      - ${HERMES_DATA_DIR:-./data/hermes}:/opt/data
+      - ./hermes/config.yaml:/opt/data/config.yaml:ro
+      - ./hermes/.env:/opt/data/.env:ro
+
+  librechat:
+    ports:
+      - "${LIBRECHAT_HOST_PORT:-3080}:${LIBRECHAT_PORT:-3080}"
+
+  postgres:
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  mongo:
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+
+  meilisearch:
+    ports:
+      - "${MEILI_HOST_PORT:-7700}:7700"

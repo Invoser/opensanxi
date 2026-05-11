@@ -1,0 +1,27 @@
+{
+  "name": "@opensanxi/mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server exposing OpenSanxi memo and finance tools.",
+  "type": "module",
+  "bin": {
+    "opensanxi-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

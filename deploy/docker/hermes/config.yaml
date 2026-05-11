@@ -1,0 +1,20 @@
+model:
+  default: "gpt-5.5"
+  provider: "custom:openai_compatible"
+  base_url: "https://api.openai.com/v1"
+  api_mode: "codex_responses"
+
+custom_providers:
+  - name: "openai_compatible"
+    base_url: "https://api.openai.com/v1"
+    key_env: "OPENAI_API_KEY"
+    api_mode: "codex_responses"
+
+timezone: "Asia/Shanghai"
+
+terminal:
+  backend: "local"
+  cwd: "/opt/data"
+
+web:
+  search_backend: "searxng"

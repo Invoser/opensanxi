@@ -1,0 +1,33 @@
+services:
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/personal_assistant?schema=public
+      HOST: 0.0.0.0
+      PORT: 3000
+      LOG_LEVEL: info
+    ports:
+      - "3000:3000"
+    command: sh -c "npx prisma migrate deploy && node dist/server.js"
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: personal_assistant
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - personal_assistant_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d personal_assistant"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  personal_assistant_pgdata:
