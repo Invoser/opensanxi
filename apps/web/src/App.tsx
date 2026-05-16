@@ -1,6 +1,8 @@
 import {
   Bot,
   ChevronRight,
+  Download,
+  FileJson,
   PanelLeftClose,
   PanelLeftOpen,
   CircleDollarSign,
@@ -25,6 +27,7 @@ import {
   apiClient,
   config,
   type FinanceSummary,
+  type BackupFile,
   type Memo,
   type MemoInput,
   type Transaction,
@@ -54,6 +57,12 @@ type TransactionFormState = {
   category: string;
   description: string;
   occurredAt: string;
+};
+
+type ParsedTransactionDraft = {
+  input: TransactionInput;
+  confidence: number;
+  warnings: string[];
 };
 
 type MarkdownNode = {
@@ -357,7 +366,7 @@ export function App() {
           />
         )}
         {route === 'chat' && <ChatPage />}
-        {route === 'settings' && <SettingsPage />}
+        {route === 'settings' && <SettingsPage onRestoreComplete={refreshData} />}
       </main>
     </div>
   );
@@ -582,6 +591,8 @@ function FinancePage({
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | undefined>();
   const [form, setForm] = useState<TransactionFormState>(emptyTransactionForm);
+  const [naturalInput, setNaturalInput] = useState('');
+  const [parseMessage, setParseMessage] = useState('');
   const [saving, setSaving] = useState(false);
 
   function beginCreate() {
@@ -591,6 +602,30 @@ function FinancePage({
       occurredAt: toDatetimeLocal(new Date().toISOString()),
     });
     setFormOpen(true);
+  }
+
+  function applyNaturalLanguageDraft() {
+    const draft = parseNaturalTransaction(naturalInput);
+    if (!draft) {
+      setParseMessage('没有识别到金额。可以试试：“昨天晚饭花了 68” 或 “今天工资收入 12000”。');
+      return;
+    }
+
+    setEditingId(undefined);
+    setForm({
+      type: draft.input.type,
+      amount: String(draft.input.amount),
+      currency: draft.input.currency,
+      category: draft.input.category,
+      description: draft.input.description ?? naturalInput.trim(),
+      occurredAt: toDatetimeLocal(draft.input.occurredAt),
+    });
+    setFormOpen(true);
+    setParseMessage(
+      draft.warnings.length > 0
+        ? `已预填，请确认：${draft.warnings.join('；')}`
+        : `已预填，置信度 ${Math.round(draft.confidence * 100)}%。确认后再保存。`,
+    );
   }
 
   function beginEdit(transaction: Transaction) {
@@ -652,6 +687,34 @@ function FinancePage({
           <span>新增记录</span>
         </button>
       </div>
+
+      <section className="panel full quick-capture">
+        <PanelHeader title="自然语言记账" />
+        <div className="quick-capture-row">
+          <label className="field">
+            <span>输入一句话</span>
+            <input
+              value={naturalInput}
+              onChange={(event) => {
+                setNaturalInput(event.target.value);
+                setParseMessage('');
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  applyNaturalLanguageDraft();
+                }
+              }}
+              placeholder="例如：昨天晚饭花了 68，和朋友吃火锅"
+            />
+          </label>
+          <button className="secondary-button" onClick={applyNaturalLanguageDraft} type="button">
+            <ChevronRight size={16} />
+            <span>解析预填</span>
+          </button>
+        </div>
+        {parseMessage && <p className="helper-text">{parseMessage}</p>}
+      </section>
 
       {formOpen && (
         <form className="editor-panel" onSubmit={submitTransaction}>
@@ -807,9 +870,104 @@ function ChatPage() {
   );
 }
 
-function SettingsPage() {
+function SettingsPage({ onRestoreComplete }: { onRestoreComplete: () => Promise<void> }) {
+  const [restoreMode, setRestoreMode] = useState<'merge' | 'replace'>('merge');
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [backupMessage, setBackupMessage] = useState('');
+
+  async function exportBackup() {
+    setBackupBusy(true);
+    setBackupMessage('');
+    const result = await apiClient.exportBackup();
+    setBackupBusy(false);
+
+    if (!result.ok) {
+      setBackupMessage(`导出失败：${result.error}`);
+      return;
+    }
+
+    const exportedAt = result.data.exportedAt ?? new Date().toISOString();
+    const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `opensanxi-backup-${exportedAt.slice(0, 10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setBackupMessage(
+      `已导出：${result.data.data.memos.length} 条 memo，${result.data.data.transactions.length} 条收支记录。`,
+    );
+  }
+
+  async function restoreBackup(file: File | undefined) {
+    if (!file) return;
+    if (
+      restoreMode === 'replace' &&
+      !window.confirm('replace 会先清空现有 memo 和收支记录，再导入备份。确定继续？')
+    ) {
+      return;
+    }
+
+    setBackupBusy(true);
+    setBackupMessage('');
+    try {
+      const backup = JSON.parse(await file.text()) as BackupFile;
+      const result = await apiClient.restoreBackup(backup, restoreMode);
+      if (!result.ok) {
+        setBackupMessage(`恢复失败：${result.error}`);
+        return;
+      }
+      await onRestoreComplete();
+      setBackupMessage(`恢复完成：${result.data.memoCount} 条 memo，${result.data.transactionCount} 条收支记录。`);
+    } catch (error) {
+      setBackupMessage(error instanceof Error ? `恢复失败：${error.message}` : '恢复失败：备份文件无法读取。');
+    } finally {
+      setBackupBusy(false);
+    }
+  }
+
   return (
     <section className="page-stack narrow">
+      <section className="panel full">
+        <PanelHeader title="备份与恢复" />
+        <div className="backup-actions">
+          <button className="primary-button" disabled={backupBusy} onClick={exportBackup} type="button">
+            <Download size={16} />
+            <span>{backupBusy ? '处理中' : '导出 JSON 备份'}</span>
+          </button>
+          <label className="file-button">
+            <FileJson size={16} />
+            <span>导入备份</span>
+            <input
+              accept="application/json,.json"
+              disabled={backupBusy}
+              onChange={(event) => {
+                void restoreBackup(event.target.files?.[0]);
+                event.currentTarget.value = '';
+              }}
+              type="file"
+            />
+          </label>
+        </div>
+        <div className="segmented-control restore-mode" aria-label="恢复模式">
+          {(['merge', 'replace'] as const).map((mode) => (
+            <button
+              className={restoreMode === mode ? 'active' : ''}
+              key={mode}
+              onClick={() => setRestoreMode(mode)}
+              type="button"
+            >
+              {mode === 'merge' ? '合并' : '替换'}
+            </button>
+          ))}
+        </div>
+        <p className="helper-text">
+          合并会按 ID 更新或新增数据；替换会先清空现有 memo 和收支记录。备份文件不包含 API Key。
+        </p>
+        {backupMessage && <p className="helper-text strong">{backupMessage}</p>}
+      </section>
       <section className="panel full">
         <PanelHeader title="Runtime" />
         <div className="settings-list">
@@ -919,6 +1077,91 @@ function parseTags(value: string) {
     .split(',')
     .map((tag) => tag.trim())
     .filter(Boolean);
+}
+
+function parseNaturalTransaction(value: string): ParsedTransactionDraft | null {
+  const text = value.trim();
+  if (!text) return null;
+
+  const normalized = text.replace(/[，。；、]/g, ' ');
+  const amountMatch = normalized.match(/(?:￥|¥|rmb|cny|元)?\s*(\d+(?:\.\d{1,2})?)\s*(?:元|块|rmb|cny|yuan)?/i);
+  if (!amountMatch) return null;
+
+  const amount = Number(amountMatch[1]);
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+
+  const lower = normalized.toLowerCase();
+  const incomeWords = ['收入', '工资', '奖金', '报销到账', '退款', '收款', '转入', '到账', '赚了'];
+  const expenseWords = ['花', '支出', '买', '付', '付款', '消费', '吃', '打车', '缴', '交', '扣款'];
+  const type: TransactionType = incomeWords.some((word) => lower.includes(word))
+    ? 'INCOME'
+    : expenseWords.some((word) => lower.includes(word))
+      ? 'EXPENSE'
+      : 'EXPENSE';
+
+  const categoryRules: Array<[string, string[]]> = [
+    ['餐饮', ['早餐', '午饭', '午餐', '晚饭', '晚餐', '夜宵', '咖啡', '奶茶', '火锅', '吃', '餐']],
+    ['交通', ['打车', '地铁', '公交', '停车', '加油', '高铁', '机票', '出租']],
+    ['购物', ['买', '购物', '淘宝', '京东', '拼多多', '衣服', '鞋']],
+    ['住房', ['房租', '物业', '水电', '电费', '水费', '燃气']],
+    ['医疗', ['医院', '药', '体检', '挂号']],
+    ['娱乐', ['电影', '游戏', '会员', '演唱会']],
+    ['工资', ['工资', '薪水', '奖金']],
+    ['退款', ['退款', '退回']],
+    ['报销', ['报销']],
+  ];
+  const category =
+    categoryRules.find(([, keywords]) => keywords.some((keyword) => lower.includes(keyword)))?.[0] ??
+    (type === 'INCOME' ? '收入' : '日常');
+
+  const occurredAt = parseNaturalDate(lower);
+  const warnings: string[] = [];
+  if (!incomeWords.some((word) => lower.includes(word)) && !expenseWords.some((word) => lower.includes(word))) {
+    warnings.push('未明确识别收支类型，默认按支出处理');
+  }
+  if (category === '日常' || category === '收入') {
+    warnings.push('分类可能需要手动调整');
+  }
+
+  const confidence = Math.max(0.55, 0.95 - warnings.length * 0.18);
+
+  return {
+    input: {
+      type,
+      amount,
+      currency: 'CNY',
+      category,
+      description: text,
+      occurredAt,
+    },
+    confidence,
+    warnings,
+  };
+}
+
+function parseNaturalDate(value: string) {
+  const now = new Date();
+  const date = new Date(now);
+  if (value.includes('前天')) {
+    date.setDate(date.getDate() - 2);
+  } else if (value.includes('昨天') || value.includes('昨晚')) {
+    date.setDate(date.getDate() - 1);
+  } else if (value.includes('明天')) {
+    date.setDate(date.getDate() + 1);
+  }
+
+  const hourMinute = value.match(/(\d{1,2})[:：点](\d{1,2})?/);
+  if (hourMinute) {
+    date.setHours(Number(hourMinute[1]), Number(hourMinute[2] ?? 0), 0, 0);
+  } else if (value.includes('早')) {
+    date.setHours(8, 0, 0, 0);
+  } else if (value.includes('午')) {
+    date.setHours(12, 0, 0, 0);
+  } else if (value.includes('晚') || value.includes('夜')) {
+    date.setHours(19, 0, 0, 0);
+  }
+
+  return date.toISOString();
 }
 
 function toDatetimeLocal(value: string) {

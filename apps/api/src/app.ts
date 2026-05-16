@@ -5,6 +5,7 @@ import { config } from "./config.js";
 import { prisma } from "./prisma.js";
 import { auditEventRoutes } from "./routes/auditEvents.js";
 import { aiToolRoutes } from "./routes/aiTools.js";
+import { backupRoutes } from "./routes/backups.js";
 import { healthRoutes } from "./routes/health.js";
 import { memoRoutes } from "./routes/memos.js";
 import { transactionRoutes } from "./routes/transactions.js";
@@ -61,11 +62,13 @@ export const buildApp = async () => {
   await app.register(transactionRoutes);
   await app.register(aiToolRoutes);
   await app.register(auditEventRoutes);
+  await app.register(backupRoutes);
 
   await app.register(memoRoutes, { prefix: "/api" });
   await app.register(transactionRoutes, { prefix: "/api" });
   await app.register(aiToolRoutes, { prefix: "/api" });
   await app.register(auditEventRoutes, { prefix: "/api" });
+  await app.register(backupRoutes, { prefix: "/api" });
 
   return app;
 };

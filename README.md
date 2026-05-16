@@ -17,11 +17,13 @@ and your AI assistant can create, search, and organize that data for you.
 - Render memo Markdown
 - Convert Markdown tables into mobile-friendly field cards on small screens
 - Create, edit, and delete income/expense records
+- Parse natural-language finance notes into editable transaction drafts
 - View income, expense, net, and category summaries
+- Export and restore JSON backups for memos and finance records
 - Expose memo and finance tools through an MCP server
 - Deploy with Docker Compose
-- Optionally integrate Hermes Agent
 - Connect to OpenAI or any OpenAI Responses API-compatible upstream
+- Optionally run Hermes Agent as a separate advanced agent profile
 
 ## Architecture
 
@@ -117,7 +119,7 @@ Optional profiles:
 | --- | --- |
 | `ai` | MCP Server, LLM Bridge, MongoDB |
 | `chat` | LibreChat, LLM Bridge, LibreChat RAG, Meilisearch, MongoDB |
-| `hermes` | Hermes Agent Gateway |
+| `hermes` | Optional Hermes advanced agent profile |
 
 Common command:
 
@@ -175,6 +177,10 @@ set `DATABASE_URL`.
 OpenSanxi uses `llm-bridge` to convert LibreChat Chat Completions requests into
 Responses API requests.
 
+By default, OpenSanxi does not run Hermes in the main chat path. The default
+chain is LibreChat -> LLM Bridge -> your OpenAI-compatible upstream API, with
+memo and finance tools exposed to LibreChat through the OpenSanxi MCP server.
+
 Common variables:
 
 | Variable | Purpose |
@@ -184,6 +190,11 @@ Common variables:
 | `OPENAI_API_KEY` | Alternative direct OpenAI API key |
 | `LLM_BRIDGE_DEFAULT_MODEL` | Default model |
 | `LLM_BRIDGE_REASONING_EFFORT` | Responses API reasoning effort |
+
+Some service env examples still use the legacy variable name
+`HERMES_API_URL` for compatibility with older OpenSanxi code. In the default
+deployment it points to `http://llm-bridge:8765`, not to a running Hermes
+container.
 
 For a non-OpenAI upstream that supports `/v1/responses`:
 
@@ -204,6 +215,16 @@ deploy/docker/librechat/librechat.yaml
 This keeps LibreChat independently upgradeable while OpenSanxi maintains only
 its own connection layer, MCP tools, and data API.
 
+## Backup And Restore
+
+The Settings page can export a JSON backup containing memos and finance records.
+Restore supports two modes:
+
+- `merge`: upsert records by ID and keep existing records not present in the backup
+- `replace`: delete existing memos and finance records before importing the backup
+
+Backups do not include API keys or deployment `.env` files.
+
 ## Hermes
 
 Hermes is an optional profile, not a required default component. The repository
@@ -215,6 +236,10 @@ deploy/docker/hermes/hermes.env.example
 ```
 
 If you only want LibreChat + LLM Bridge, do not start the `hermes` profile.
+
+Use the Hermes profile when you explicitly want a separate agent runtime with
+its own tool orchestration, memory, skills, and gateway integrations. It is not
+enabled by the standard `ai` + `chat` startup command.
 
 ## Production Notes
 
@@ -243,7 +268,7 @@ OpenSanxi integrates with or references these open-source projects:
 | Project | Purpose | License |
 | --- | --- | --- |
 | [LibreChat](https://github.com/danny-avila/LibreChat) | Chat frontend and conversation system | MIT |
-| [Hermes Agent](https://github.com/NousResearch/hermes-agent) | Optional AI Agent Gateway | MIT |
+| [Hermes Agent](https://github.com/NousResearch/hermes-agent) | Optional advanced agent profile; not used in the default chat path | MIT |
 | [OpenClaw](https://github.com/openclaw/openclaw) | Evaluated during design; not bundled in this repository | MIT |
 
 Because the relevant upstream projects are MIT-licensed, OpenSanxi is also

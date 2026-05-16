@@ -9,10 +9,10 @@ This directory contains the Docker Compose deployment for OpenSanxi.
 - `personal-api`: Fastify API for memos, transactions, summaries, and AI tool endpoints.
 - `personal-api-migrate`: one-shot Prisma migration job.
 - `personal-mcp`: MCP HTTP server exposing memo and finance tools.
-- `llm-bridge`: small OpenAI-compatible bridge for LibreChat.
+- `llm-bridge`: default OpenAI-compatible bridge for LibreChat.
 - `librechat`: upstream LibreChat chat UI/API.
 - `librechat-rag`, `meilisearch`, `mongo`, `postgres`: LibreChat and data dependencies.
-- `hermes`: optional Hermes gateway profile.
+- `hermes`: optional advanced Hermes agent profile; not part of the default chat path.
 
 The Compose project name is `opensanxi`. Services still use the `personal-*`
 internal names for compatibility with the existing app configuration.
@@ -67,7 +67,7 @@ Open:
 - No profile: web, API, migrations, Postgres, and Caddy.
 - `ai`: MCP server, LLM bridge, and Mongo.
 - `chat`: LibreChat, LLM bridge, RAG API, Meilisearch, and Mongo.
-- `hermes`: optional Hermes gateway.
+- `hermes`: optional Hermes agent gateway. Start it only when you explicitly want Hermes in addition to the default LLM bridge.
 
 ## Production
 
@@ -95,5 +95,6 @@ servers that build images directly on the host.
 ## Upstream Projects
 
 OpenSanxi does not vendor LibreChat, Hermes, or OpenClaw source code. It uses
-LibreChat images and provides configuration for optional Hermes/OpenAI-compatible
-providers. See `THIRD_PARTY_NOTICES.md` at the repository root for licenses.
+LibreChat images, uses `llm-bridge` as the default AI connection layer, and
+keeps Hermes as an optional separate profile. See `THIRD_PARTY_NOTICES.md` at
+the repository root for licenses.

@@ -48,6 +48,24 @@ export type FinanceSummary = {
   }>;
 };
 
+export type BackupFile = {
+  app?: 'opensanxi';
+  formatVersion: 1;
+  exportedAt?: string;
+  data: {
+    memos: Array<Memo & { archived?: boolean; createdAt: string; updatedAt: string }>;
+    transactions: Array<Transaction & { createdAt: string; updatedAt: string }>;
+  };
+};
+
+export type RestoreResult = {
+  ok: true;
+  restoredAt: string;
+  mode: 'merge' | 'replace';
+  memoCount: number;
+  transactionCount: number;
+};
+
 export type AssistantSettings = {
   apiBaseUrl: string;
   chatUrl: string;
@@ -183,5 +201,13 @@ export const apiClient = {
     request<AssistantSettings>('settings', {
       method: 'PATCH',
       body: JSON.stringify(settings),
+    }),
+  async exportBackup(): Promise<ApiResult<BackupFile>> {
+    return request<BackupFile>('backups/export');
+  },
+  restoreBackup: (backup: BackupFile, mode: 'merge' | 'replace') =>
+    request<RestoreResult>('backups/restore', {
+      method: 'POST',
+      body: JSON.stringify({ backup, mode }),
     }),
 };

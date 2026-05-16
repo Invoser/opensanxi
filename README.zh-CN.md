@@ -13,11 +13,13 @@ OpenSanxi 是一个自托管的个人 AI 助手项目，用来把聊天、备忘
 - 备忘录支持 Markdown 渲染
 - 手机端会把 Markdown 表格自动转换成更好读的字段卡片
 - 创建、编辑、删除收入/支出记录
+- 把自然语言记账内容解析成可确认的收支草稿
 - 查看收入、支出、净额和分类汇总
+- 导出和恢复备忘录、收支记录 JSON 备份
 - 通过 MCP Server 暴露备忘录和记账工具给 AI 调用
 - 提供 Docker Compose 部署方案
-- 可选接入 Hermes Agent
 - 可接入 OpenAI 或兼容 OpenAI Responses API 的上游服务
+- 可选把 Hermes Agent 作为独立的高级 Agent profile 运行
 
 ## 架构
 
@@ -113,7 +115,7 @@ http://localhost:8088
 | --- | --- |
 | `ai` | MCP Server、LLM Bridge、MongoDB |
 | `chat` | LibreChat、LLM Bridge、LibreChat RAG、Meilisearch、MongoDB |
-| `hermes` | Hermes Agent Gateway |
+| `hermes` | 可选 Hermes 高级 Agent profile |
 
 常用启动命令：
 
@@ -169,6 +171,10 @@ npm run build
 
 OpenSanxi 默认通过 `llm-bridge` 把 LibreChat 的 Chat Completions 请求转换成 Responses API 请求。
 
+默认情况下，OpenSanxi 的主聊天链路不运行 Hermes。默认链路是：
+LibreChat -> LLM Bridge -> 你的 OpenAI 兼容上游 API；备忘录和记账工具则通过
+OpenSanxi MCP Server 暴露给 LibreChat 调用。
+
 常用配置：
 
 | 变量 | 说明 |
@@ -178,6 +184,10 @@ OpenSanxi 默认通过 `llm-bridge` 把 LibreChat 的 Chat Completions 请求转
 | `OPENAI_API_KEY` | 也可以直接使用 OpenAI API Key |
 | `LLM_BRIDGE_DEFAULT_MODEL` | 默认模型 |
 | `LLM_BRIDGE_REASONING_EFFORT` | Responses API reasoning effort |
+
+部分服务的 env 示例里仍保留了历史变量名 `HERMES_API_URL`，这是为了兼容早期
+OpenSanxi 代码。默认部署中它指向 `http://llm-bridge:8765`，不是指向正在运行的
+Hermes 容器。
 
 如果你的上游不是 OpenAI 官方，但兼容 `/v1/responses`，设置：
 
@@ -196,6 +206,15 @@ deploy/docker/librechat/librechat.yaml
 
 这样做的好处是 LibreChat 可以独立升级，OpenSanxi 只维护自己的连接层、MCP 工具和数据 API。
 
+## 备份与恢复
+
+Settings 页面可以导出包含备忘录和收支记录的 JSON 备份。恢复支持两种模式：
+
+- `merge`：按 ID 更新或新增备份里的记录，不删除现有其它记录
+- `replace`：先删除现有备忘录和收支记录，再导入备份
+
+备份文件不包含 API Key 或部署 `.env` 文件。
+
 ## Hermes
 
 Hermes 是可选 profile，不是默认必需组件。当前仓库提供了 Hermes 的配置模板：
@@ -206,6 +225,9 @@ deploy/docker/hermes/hermes.env.example
 ```
 
 如果你只想使用 LibreChat + LLM Bridge，可以不启动 `hermes` profile。
+
+只有在你明确需要独立 Agent runtime、工具编排、记忆、skills 或多平台 gateway
+能力时，才需要启动 Hermes profile。标准的 `ai` + `chat` 启动命令不会启用 Hermes。
 
 ## 生产部署建议
 
@@ -234,7 +256,7 @@ OpenSanxi 集成或参考了这些开源项目：
 | 项目 | 用途 | 协议 |
 | --- | --- | --- |
 | [LibreChat](https://github.com/danny-avila/LibreChat) | Chat 前端和对话系统 | MIT |
-| [Hermes Agent](https://github.com/NousResearch/hermes-agent) | 可选 AI Agent Gateway | MIT |
+| [Hermes Agent](https://github.com/NousResearch/hermes-agent) | 可选高级 Agent profile；默认聊天链路不使用 | MIT |
 | [OpenClaw](https://github.com/openclaw/openclaw) | 设计阶段参考，当前仓库不包含其源码 | MIT |
 
 因为相关上游项目均为 MIT 协议，OpenSanxi 也使用 MIT 协议发布。详见：

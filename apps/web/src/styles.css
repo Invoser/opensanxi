@@ -457,7 +457,9 @@ a {
 }
 
 .toolbar,
-.chat-actions {
+.chat-actions,
+.backup-actions,
+.quick-capture-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -520,7 +522,8 @@ a {
 }
 
 .field input,
-.field textarea {
+.field textarea,
+.file-button {
   width: 100%;
   border: 1px solid #d9dacd;
   border-radius: 8px;
@@ -533,6 +536,56 @@ a {
 .field textarea {
   min-height: 108px;
   resize: vertical;
+}
+
+.quick-capture {
+  display: grid;
+  gap: 12px;
+}
+
+.quick-capture-row .field {
+  flex: 1;
+}
+
+.backup-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.file-button {
+  position: relative;
+  display: inline-flex;
+  width: auto;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #30382e;
+  cursor: pointer;
+  padding: 0 16px;
+}
+
+.file-button input {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.restore-mode {
+  margin-top: 14px;
+}
+
+.helper-text {
+  margin: 8px 0 0;
+  color: #687165;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.helper-text.strong {
+  color: #263027;
+  font-weight: 700;
 }
 
 .field input:focus,
@@ -951,8 +1004,15 @@ a {
     flex-direction: column;
   }
 
+  .quick-capture-row,
+  .backup-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .primary-button,
-  .secondary-button {
+  .secondary-button,
+  .file-button {
     width: 100%;
   }
 

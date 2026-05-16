@@ -1,4 +1,4 @@
-version: 1.3.10
+version: 1.3.11
 cache: true
 
 interface:
@@ -14,7 +14,7 @@ registration:
 
 endpoints:
   custom:
-    - name: "Hermes"
+    - name: "OpenSanxi"
       apiKey: "${API_SERVER_KEY}"
       baseURL: "${LLM_BRIDGE_URL}"
       models:
@@ -22,7 +22,7 @@ endpoints:
           - "gpt-5.5"
       titleConvo: true
       titleModel: "gpt-5.5"
-      modelDisplayLabel: "Personal LLM"
+      modelDisplayLabel: "OpenSanxi"
 
 mcpServers:
   personal:
