@@ -69,6 +69,7 @@ export type RestoreResult = {
 export type AssistantSettings = {
   apiBaseUrl: string;
   chatUrl: string;
+  agentUrl: string;
   locale: string;
   compactMode: boolean;
 };
@@ -88,6 +89,7 @@ function normalizeApiBaseUrl(value: string) {
 export const config = {
   apiBaseUrl: normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL || defaultApiBaseUrl),
   chatUrl: import.meta.env.VITE_CHAT_URL || '/chat/',
+  agentUrl: import.meta.env.VITE_AGENT_URL || '/agent/hermes-ui.html',
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<ApiResult<T>> {

@@ -456,6 +456,50 @@ a {
   color: #3d443c;
 }
 
+.chat-entry-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.chat-entry-card {
+  display: grid;
+  min-height: 190px;
+  align-content: space-between;
+  gap: 16px;
+  border: 1px solid #dfdfd2;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 18px;
+}
+
+.chat-entry-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid #d8dacb;
+  border-radius: 8px;
+  background: #f6f7ef;
+  color: #343b31;
+}
+
+.chat-entry-card h2,
+.chat-entry-card p {
+  margin: 0;
+}
+
+.chat-entry-card h2 {
+  color: #20241f;
+  font-size: 1rem;
+}
+
+.chat-entry-card p {
+  margin-top: 8px;
+  color: #5c6559;
+  line-height: 1.5;
+}
+
 .toolbar,
 .chat-actions,
 .backup-actions,
@@ -1030,6 +1074,10 @@ a {
   }
 
   .memo-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chat-entry-grid {
     grid-template-columns: 1fr;
   }
 

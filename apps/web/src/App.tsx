@@ -848,23 +848,44 @@ function FinancePage({
 }
 
 function ChatPage() {
-  const chatUrl = config.chatUrl;
+  const chatEntries = [
+    {
+      title: 'LibreChat',
+      description: '当前默认聊天入口，继续使用 OpenSanxi MCP 工具和上下文记录。',
+      url: config.chatUrl,
+    },
+    {
+      title: 'Hermes UI',
+      description: '新的 Agent 入口，用来体验 Hermes 的工具编排、记忆和 skills 交互。',
+      url: config.agentUrl,
+    },
+  ];
 
   return (
     <section className="page-stack">
-      <section className="panel full chat-launcher">
-        {chatUrl ? (
-          <a className="primary-link" href={chatUrl} target="_blank" rel="noreferrer">
-            <ExternalLink size={16} />
-            <span>打开 Chat</span>
-          </a>
-        ) : (
-          <div className="empty-state">
-            <MessageSquareText size={34} />
-            <h2>Chat URL 未配置</h2>
-            <p>设置 VITE_CHAT_URL 后，这里会加载聊天服务。</p>
-          </div>
-        )}
+      <section className="panel full">
+        <PanelHeader title="Chat 入口" />
+        <div className="chat-entry-grid">
+          {chatEntries.map((entry) => (
+            <article className="chat-entry-card" key={entry.title}>
+              <div className="chat-entry-icon">
+                <MessageSquareText size={22} />
+              </div>
+              <div>
+                <h2>{entry.title}</h2>
+                <p>{entry.description}</p>
+              </div>
+              {entry.url ? (
+                <a className="primary-link" href={entry.url} target="_blank" rel="noreferrer">
+                  <ExternalLink size={16} />
+                  <span>打开</span>
+                </a>
+              ) : (
+                <p className="helper-text">入口未配置</p>
+              )}
+            </article>
+          ))}
+        </div>
       </section>
     </section>
   );
@@ -973,6 +994,7 @@ function SettingsPage({ onRestoreComplete }: { onRestoreComplete: () => Promise<
         <div className="settings-list">
           <SettingRow label="API Base URL" value={config.apiBaseUrl} />
           <SettingRow label="Chat URL" value={config.chatUrl || '未配置'} />
+          <SettingRow label="Agent URL" value={config.agentUrl || '未配置'} />
           <SettingRow label="Locale" value="zh-CN" />
           <SettingRow label="Build" value={import.meta.env.MODE} />
         </div>
