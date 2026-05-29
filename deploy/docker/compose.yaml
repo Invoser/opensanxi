@@ -201,12 +201,15 @@ services:
       PERSONAL_MCP_URL: ${PERSONAL_MCP_URL:-http://personal-mcp:8787}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       BAIXIAN_API_KEY: ${BAIXIAN_API_KEY:-}
+      CUSTOM_BASE_URL: ${BAIXIAN_BASE_URL:-https://sub.baixian.xyz/v1}
+      CUSTOM_API_KEY: ${BAIXIAN_API_KEY:-}
+      HERMES_UI_MODELS: ${HERMES_UI_MODELS:-gpt-5.5}
     expose:
       - "${HERMES_UI_PORT:-3333}"
     volumes:
       - hermes_data:/opt/data
       - ${HERMES_UI_CONTEXT:-../hermes-ui}:/opt/hermes-ui:ro
-      - ./hermes/config.yaml:/opt/data/config.yaml:ro
+      - ./hermes/config.yaml:/opt/data/.hermes/config.yaml:ro
     depends_on:
       postgres:
         condition: service_healthy

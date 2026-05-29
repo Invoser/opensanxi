@@ -1,13 +1,13 @@
 model:
   default: "gpt-5.5"
-  provider: "custom:openai_compatible"
-  base_url: "https://api.openai.com/v1"
+  provider: "custom"
+  base_url: "https://sub.baixian.xyz/v1"
   api_mode: "codex_responses"
 
 custom_providers:
-  - name: "openai_compatible"
-    base_url: "https://api.openai.com/v1"
-    key_env: "OPENAI_API_KEY"
+  - name: "baixian"
+    base_url: "https://sub.baixian.xyz/v1"
+    key_env: "BAIXIAN_API_KEY"
     api_mode: "codex_responses"
 
 timezone: "Asia/Shanghai"
