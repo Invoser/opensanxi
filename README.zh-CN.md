@@ -9,6 +9,7 @@ OpenSanxi 是一个自托管的个人 AI 助手项目，用来把聊天、备忘
 ## 功能
 
 - 通过 LibreChat 与 AI 对话
+- 可选在 `/agent/` 保留第二个 Hermes UI Agent 入口
 - 创建、编辑、删除和搜索备忘录
 - 备忘录支持 Markdown 渲染
 - 手机端会把 Markdown 表格自动转换成更好读的字段卡片
@@ -29,9 +30,11 @@ flowchart LR
   Caddy --> Web["OpenSanxi Web"]
   Caddy --> API["OpenSanxi API"]
   Caddy --> Chat["LibreChat"]
+  Caddy --> Agent["Hermes UI"]
   Chat --> Bridge["LLM Bridge"]
   Bridge --> LLM["OpenAI 兼容 Responses API"]
   Chat --> MCP["OpenSanxi MCP Server"]
+  Agent --> Hermes["Hermes Agent Runtime"]
   MCP --> API
   API --> Postgres["PostgreSQL"]
   Chat --> Mongo["MongoDB"]
@@ -115,7 +118,7 @@ http://localhost:8088
 | --- | --- |
 | `ai` | MCP Server、LLM Bridge、MongoDB |
 | `chat` | LibreChat、LLM Bridge、LibreChat RAG、Meilisearch、MongoDB |
-| `hermes` | 可选 Hermes 高级 Agent profile |
+| `hermes` | 可选 Hermes Agent runtime，以及 `/agent/` Hermes UI 入口 |
 
 常用启动命令：
 
@@ -206,6 +209,12 @@ deploy/docker/librechat/librechat.yaml
 
 这样做的好处是 LibreChat 可以独立升级，OpenSanxi 只维护自己的连接层、MCP 工具和数据 API。
 
+LibreChat 仍然是默认聊天入口：
+
+```text
+/chat/
+```
+
 ## 备份与恢复
 
 Settings 页面可以导出包含备忘录和收支记录的 JSON 备份。恢复支持两种模式：
@@ -227,7 +236,22 @@ deploy/docker/hermes/hermes.env.example
 如果你只想使用 LibreChat + LLM Bridge，可以不启动 `hermes` profile。
 
 只有在你明确需要独立 Agent runtime、工具编排、记忆、skills 或多平台 gateway
-能力时，才需要启动 Hermes profile。标准的 `ai` + `chat` 启动命令不会启用 Hermes。
+能力时，才需要启动 Hermes profile。Hermes profile 现在包含第二个聊天/Agent 入口：
+
+```text
+/agent/
+```
+
+Hermes UI 通过外部 checkout 挂载进容器，不会 vendoring 到本仓库。如果 Hermes Agent
+和 Hermes UI 仓库不在 `deploy/docker` 旁边，设置：
+
+```env
+HERMES_CONTEXT=/path/to/hermes-agent
+HERMES_UI_CONTEXT=/path/to/hermes-ui
+```
+
+`/agent/` 使用和 OpenSanxi Web 相同的外层 Basic Auth 保护。建议先同时保留
+`/chat/` 和 `/agent/`，实际使用后再决定降级或移除哪一个入口。
 
 ## 生产部署建议
 
@@ -257,6 +281,7 @@ OpenSanxi 集成或参考了这些开源项目：
 | --- | --- | --- |
 | [LibreChat](https://github.com/danny-avila/LibreChat) | Chat 前端和对话系统 | MIT |
 | [Hermes Agent](https://github.com/NousResearch/hermes-agent) | 可选高级 Agent profile；默认聊天链路不使用 | MIT |
+| [Hermes UI](https://github.com/pyrate-llama/hermes-ui) | 可选第二聊天/Agent 入口，挂载到 `/agent/` | MIT |
 | [OpenClaw](https://github.com/openclaw/openclaw) | 设计阶段参考，当前仓库不包含其源码 | MIT |
 
 因为相关上游项目均为 MIT 协议，OpenSanxi 也使用 MIT 协议发布。详见：

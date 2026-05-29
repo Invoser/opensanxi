@@ -12,7 +12,8 @@ This directory contains the Docker Compose deployment for OpenSanxi.
 - `llm-bridge`: default OpenAI-compatible bridge for LibreChat.
 - `librechat`: upstream LibreChat chat UI/API.
 - `librechat-rag`, `meilisearch`, `mongo`, `postgres`: LibreChat and data dependencies.
-- `hermes`: optional advanced Hermes agent profile; not part of the default chat path.
+- `hermes`: optional advanced Hermes agent runtime; not part of the default chat path.
+- `hermes-ui`: optional Hermes UI entry at `/agent/` for comparing a second chat/agent experience.
 
 The Compose project name is `opensanxi`. Services still use the `personal-*`
 internal names for compatibility with the existing app configuration.
@@ -61,13 +62,33 @@ Open:
 - Web UI: `http://localhost:8088`
 - API: `http://localhost:8088/api/health`
 - LibreChat: `http://localhost:8088/chat/`
+- Hermes UI: `http://localhost:8088/agent/` when the `hermes` profile is enabled
 
 ## Profiles
 
 - No profile: web, API, migrations, Postgres, and Caddy.
 - `ai`: MCP server, LLM bridge, and Mongo.
 - `chat`: LibreChat, LLM bridge, RAG API, Meilisearch, and Mongo.
-- `hermes`: optional Hermes agent gateway. Start it only when you explicitly want Hermes in addition to the default LLM bridge.
+- `hermes`: optional Hermes agent runtime and Hermes UI. Start it only when you explicitly want Hermes in addition to the default LibreChat entry.
+
+To compare both chat entries locally, keep `ai` and `chat` enabled and add
+`hermes`:
+
+```powershell
+docker compose --env-file .\.env -f .\compose.yaml -f .\compose.dev.yaml --profile ai --profile chat --profile hermes up -d
+```
+
+Hermes Agent and Hermes UI are external checkouts. If they are not in the
+default `../hermes` and `../hermes-ui` paths, set:
+
+```env
+HERMES_CONTEXT=D:\path\to\hermes-agent
+HERMES_UI_CONTEXT=D:\path\to\hermes-ui
+```
+
+The `/agent/` route strips the path prefix before proxying to Hermes UI, and the
+container patches the UI at startup so its API calls stay under `/agent/*`
+instead of colliding with OpenSanxi's own `/api/*`.
 
 ## Production
 
@@ -96,5 +117,5 @@ servers that build images directly on the host.
 
 OpenSanxi does not vendor LibreChat, Hermes, or OpenClaw source code. It uses
 LibreChat images, uses `llm-bridge` as the default AI connection layer, and
-keeps Hermes as an optional separate profile. See `THIRD_PARTY_NOTICES.md` at
-the repository root for licenses.
+keeps Hermes Agent and Hermes UI as optional separate integrations. See
+`THIRD_PARTY_NOTICES.md` at the repository root for licenses.

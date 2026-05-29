@@ -91,7 +91,7 @@ services:
       - personal-assistant
 
   personal-mcp:
-    profiles: ["ai"]
+    profiles: ["ai", "hermes"]
     image: ${PERSONAL_MCP_IMAGE:-opensanxi-mcp:local}
     <<: *restart-policy
     env_file:
@@ -166,7 +166,86 @@ services:
         condition: service_healthy
       mongo:
         condition: service_healthy
-    command: ["gateway", "run"]
+    entrypoint: ["/usr/bin/tini", "-g", "--", "/bin/bash", "-lc"]
+    command:
+      - |
+        set -eu
+        tr -d '\r' < /opt/hermes/docker/entrypoint.sh > /tmp/hermes-entrypoint.sh
+        chmod +x /tmp/hermes-entrypoint.sh
+        exec /tmp/hermes-entrypoint.sh gateway run
+    networks:
+      - personal-assistant
+
+  hermes-ui:
+    profiles: ["hermes"]
+    image: ${HERMES_IMAGE:-hermes-agent:local}
+    <<: *restart-policy
+    env_file:
+      - ./hermes/hermes.env.example
+    environment:
+      <<: *common-env
+      HERMES_UID: ${HERMES_UID:-10000}
+      HERMES_GID: ${HERMES_GID:-10000}
+      HERMES_UI_PORT: ${HERMES_UI_PORT:-3333}
+      HERMES_UI_BASE_PATH: ${HERMES_UI_BASE_PATH:-/agent}
+      HERMES_UI_PASSWORD: ${HERMES_UI_PASSWORD:-}
+      POSTGRES_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-assistant}:${POSTGRES_PASSWORD:-assistant_dev_password}@postgres:5432/${POSTGRES_DB:-assistant}}
+      MONGO_URI: ${MONGO_URI:-mongodb://${MONGO_INITDB_ROOT_USERNAME:-assistant}:${MONGO_INITDB_ROOT_PASSWORD:-assistant_dev_password}@mongo:27017/${MONGO_DATABASE:-assistant}?authSource=admin}
+      PERSONAL_API_URL: ${PERSONAL_API_URL:-http://personal-api:8080}
+      PERSONAL_MCP_URL: ${PERSONAL_MCP_URL:-http://personal-mcp:8787}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      BAIXIAN_API_KEY: ${BAIXIAN_API_KEY:-}
+    expose:
+      - "${HERMES_UI_PORT:-3333}"
+    volumes:
+      - hermes_data:/opt/data
+      - ${HERMES_UI_CONTEXT:-../hermes-ui}:/opt/hermes-ui:ro
+      - ./hermes/config.yaml:/opt/data/config.yaml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      personal-api:
+        condition: service_started
+      personal-mcp:
+        condition: service_started
+    entrypoint: ["/usr/bin/tini", "-g", "--", "/bin/bash", "-lc"]
+    command:
+      - |
+        set -eu
+        tr -d '\r' < /opt/hermes/docker/entrypoint.sh > /tmp/hermes-entrypoint.sh
+        chmod +x /tmp/hermes-entrypoint.sh
+        cat > /tmp/start-hermes-ui.sh <<'START_HERMES_UI'
+        set -eu
+        agent_dir="/opt/data/.hermes/hermes-agent"
+        ui_dir="/tmp/hermes-ui"
+        mkdir -p "$$agent_dir" /opt/data/.hermes
+        find "$$agent_dir" -mindepth 1 -maxdepth 1 -type l -delete
+        for item in /opt/hermes/* /opt/hermes/.[!.]*; do
+          [ -e "$$item" ] || continue
+          ln -sfn "$$item" "$$agent_dir/$$(basename "$$item")"
+        done
+        ln -sfn /opt/hermes/.venv "$$agent_dir/venv"
+        rm -rf "$$ui_dir"
+        cp -a /opt/hermes-ui "$$ui_dir"
+        python - <<'PY'
+        import os
+        import pathlib
+        import re
+
+        base = os.environ.get("HERMES_UI_BASE_PATH", "/agent").rstrip("/") or "/agent"
+        html = pathlib.Path("/tmp/hermes-ui/hermes-ui.html")
+        text = html.read_text(encoding="utf-8")
+        text = text.replace("const API_BASE = '';", f"const API_BASE = window.HERMES_UI_BASE_PATH || '{base}';")
+        text = re.sub(r"fetch\('/(api|health|memory|skills|browse|readfile|writefile|cron|terminal|server)", r"fetch(API_BASE + '/\1", text)
+        text = text.replace('src="/filler-bg.png"', 'src={API_BASE + "/filler-bg.png"}')
+        html.write_text(text, encoding="utf-8")
+        PY
+        exec /opt/hermes/.venv/bin/python "$$ui_dir/serve_lite.py" --port "$${HERMES_UI_PORT:-3333}"
+        START_HERMES_UI
+        chmod +x /tmp/start-hermes-ui.sh
+        exec /tmp/hermes-entrypoint.sh sh /tmp/start-hermes-ui.sh
     networks:
       - personal-assistant
 
@@ -272,7 +351,7 @@ services:
       - personal-assistant
 
   mongo:
-    profiles: ["chat", "ai"]
+    profiles: ["chat", "ai", "hermes"]
     image: mongo:8.0
     <<: *restart-policy
     environment:

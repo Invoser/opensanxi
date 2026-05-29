@@ -33,6 +33,18 @@ services:
       dockerfile: Dockerfile
     image: ${LLM_BRIDGE_IMAGE:-opensanxi-llm-bridge:n100}
 
+  hermes:
+    build:
+      context: ${HERMES_CONTEXT:-../hermes}
+      dockerfile: ${HERMES_DOCKERFILE:-Dockerfile}
+    image: ${HERMES_IMAGE:-hermes-agent:n100}
+
+  hermes-ui:
+    build:
+      context: ${HERMES_CONTEXT:-../hermes}
+      dockerfile: ${HERMES_DOCKERFILE:-Dockerfile}
+    image: ${HERMES_IMAGE:-hermes-agent:n100}
+
   mongo:
     image: mongo:4.4
     healthcheck:

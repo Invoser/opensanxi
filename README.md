@@ -13,6 +13,7 @@ and your AI assistant can create, search, and organize that data for you.
 ## Features
 
 - Chat with an AI assistant through LibreChat
+- Optionally compare a second Hermes UI agent entry at `/agent/`
 - Create, edit, delete, and search memos
 - Render memo Markdown
 - Convert Markdown tables into mobile-friendly field cards on small screens
@@ -33,9 +34,11 @@ flowchart LR
   Caddy --> Web["OpenSanxi Web"]
   Caddy --> API["OpenSanxi API"]
   Caddy --> Chat["LibreChat"]
+  Caddy --> Agent["Hermes UI"]
   Chat --> Bridge["LLM Bridge"]
   Bridge --> LLM["OpenAI-compatible Responses API"]
   Chat --> MCP["OpenSanxi MCP Server"]
+  Agent --> Hermes["Hermes Agent Runtime"]
   MCP --> API
   API --> Postgres["PostgreSQL"]
   Chat --> Mongo["MongoDB"]
@@ -119,7 +122,7 @@ Optional profiles:
 | --- | --- |
 | `ai` | MCP Server, LLM Bridge, MongoDB |
 | `chat` | LibreChat, LLM Bridge, LibreChat RAG, Meilisearch, MongoDB |
-| `hermes` | Optional Hermes advanced agent profile |
+| `hermes` | Optional Hermes Agent runtime and Hermes UI at `/agent/` |
 
 Common command:
 
@@ -215,6 +218,12 @@ deploy/docker/librechat/librechat.yaml
 This keeps LibreChat independently upgradeable while OpenSanxi maintains only
 its own connection layer, MCP tools, and data API.
 
+LibreChat remains the default chat entry:
+
+```text
+/chat/
+```
+
 ## Backup And Restore
 
 The Settings page can export a JSON backup containing memos and finance records.
@@ -238,8 +247,25 @@ deploy/docker/hermes/hermes.env.example
 If you only want LibreChat + LLM Bridge, do not start the `hermes` profile.
 
 Use the Hermes profile when you explicitly want a separate agent runtime with
-its own tool orchestration, memory, skills, and gateway integrations. It is not
-enabled by the standard `ai` + `chat` startup command.
+its own tool orchestration, memory, skills, and gateway integrations. The
+profile now includes a second chat entry through Hermes UI:
+
+```text
+/agent/
+```
+
+Hermes UI is mounted from an external checkout instead of vendored into this
+repository. Set these variables when the Hermes and Hermes UI repositories are
+not next to `deploy/docker`:
+
+```env
+HERMES_CONTEXT=/path/to/hermes-agent
+HERMES_UI_CONTEXT=/path/to/hermes-ui
+```
+
+The `/agent/` route is protected by the same outer Basic Auth as the main
+OpenSanxi web app. Keep `/chat/` enabled while you compare both chat
+experiences.
 
 ## Production Notes
 
@@ -269,6 +295,7 @@ OpenSanxi integrates with or references these open-source projects:
 | --- | --- | --- |
 | [LibreChat](https://github.com/danny-avila/LibreChat) | Chat frontend and conversation system | MIT |
 | [Hermes Agent](https://github.com/NousResearch/hermes-agent) | Optional advanced agent profile; not used in the default chat path | MIT |
+| [Hermes UI](https://github.com/pyrate-llama/hermes-ui) | Optional second chat/agent UI mounted at `/agent/` | MIT |
 | [OpenClaw](https://github.com/openclaw/openclaw) | Evaluated during design; not bundled in this repository | MIT |
 
 Because the relevant upstream projects are MIT-licensed, OpenSanxi is also

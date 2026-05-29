@@ -65,6 +65,19 @@ services:
       - ./hermes/config.yaml:/opt/data/config.yaml:ro
       - ./hermes/.env:/opt/data/.env:ro
 
+  hermes-ui:
+    build:
+      context: ${HERMES_CONTEXT:-../hermes}
+      dockerfile: ${HERMES_DOCKERFILE:-Dockerfile}
+    image: ${HERMES_IMAGE:-hermes-agent:dev}
+    ports:
+      - "${HERMES_UI_HOST_PORT:-3333}:${HERMES_UI_PORT:-3333}"
+    volumes:
+      - ${HERMES_DATA_DIR:-./data/hermes}:/opt/data
+      - ${HERMES_UI_CONTEXT:-../hermes-ui}:/opt/hermes-ui:ro
+      - ./hermes/config.yaml:/opt/data/config.yaml:ro
+      - ./hermes/.env:/opt/data/.env:ro
+
   librechat:
     ports:
       - "${LIBRECHAT_HOST_PORT:-3080}:${LIBRECHAT_PORT:-3080}"

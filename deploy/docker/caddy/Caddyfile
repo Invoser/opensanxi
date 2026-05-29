@@ -31,6 +31,12 @@
 		}
 	}
 
+	handle_path /agent/* {
+		reverse_proxy hermes-ui:{$HERMES_UI_PORT:3333} {
+			header_up -Authorization
+		}
+	}
+
 	handle_path /hermes/* {
 		reverse_proxy hermes:{$API_SERVER_PORT:8765} {
 			header_up -Authorization
