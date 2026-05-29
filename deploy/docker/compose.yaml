@@ -166,13 +166,19 @@ services:
         condition: service_healthy
       mongo:
         condition: service_healthy
-    entrypoint: ["/usr/bin/tini", "-g", "--", "/bin/bash", "-lc"]
+    entrypoint: ["/bin/sh", "-lc"]
     command:
       - |
         set -eu
-        tr -d '\r' < /opt/hermes/docker/entrypoint.sh > /tmp/hermes-entrypoint.sh
-        chmod +x /tmp/hermes-entrypoint.sh
-        exec /tmp/hermes-entrypoint.sh gateway run
+        if [ -x /init ] && [ -x /opt/hermes/docker/main-wrapper.sh ]; then
+          exec /init /opt/hermes/docker/main-wrapper.sh gateway run
+        fi
+        if [ -f /opt/hermes/docker/entrypoint.sh ]; then
+          tr -d '\r' < /opt/hermes/docker/entrypoint.sh > /tmp/hermes-entrypoint.sh
+          chmod +x /tmp/hermes-entrypoint.sh
+          exec /tmp/hermes-entrypoint.sh gateway run
+        fi
+        exec hermes gateway run
     networks:
       - personal-assistant
 
@@ -210,14 +216,12 @@ services:
         condition: service_started
       personal-mcp:
         condition: service_started
-    entrypoint: ["/usr/bin/tini", "-g", "--", "/bin/bash", "-lc"]
+    entrypoint: ["/bin/sh", "-lc"]
     command:
       - |
         set -eu
-        tr -d '\r' < /opt/hermes/docker/entrypoint.sh > /tmp/hermes-entrypoint.sh
-        chmod +x /tmp/hermes-entrypoint.sh
-        cat > /tmp/start-hermes-ui.sh <<'START_HERMES_UI'
-        set -eu
+        export HOME=/opt/data
+        export HERMES_HOME=/opt/data
         agent_dir="/opt/data/.hermes/hermes-agent"
         ui_dir="/tmp/hermes-ui"
         mkdir -p "$$agent_dir" /opt/data/.hermes
@@ -243,9 +247,6 @@ services:
         html.write_text(text, encoding="utf-8")
         PY
         exec /opt/hermes/.venv/bin/python "$$ui_dir/serve_lite.py" --port "$${HERMES_UI_PORT:-3333}"
-        START_HERMES_UI
-        chmod +x /tmp/start-hermes-ui.sh
-        exec /tmp/hermes-entrypoint.sh sh /tmp/start-hermes-ui.sh
     networks:
       - personal-assistant
 
