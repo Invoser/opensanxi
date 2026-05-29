@@ -1,7 +1,7 @@
 model:
   default: "gpt-5.5"
   provider: "custom"
-  base_url: "https://sub.baixian.xyz/v1"
+  base_url: "https://sub.sanxi.cfd/v1"
   api_mode: "codex_responses"
 
 custom_providers:
@@ -18,3 +18,15 @@ terminal:
 
 web:
   search_backend: "searxng"
+
+mcp_servers:
+  opensanxi:
+    url: "http://personal-mcp:8787/mcp"
+    enabled: true
+    tools:
+      include:
+        - add_memo
+        - search_memos
+        - add_transaction
+        - query_transactions
+        - monthly_finance_summary

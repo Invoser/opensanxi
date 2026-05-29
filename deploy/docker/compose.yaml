@@ -212,6 +212,7 @@ services:
       - hermes_data:/opt/data
       - ${HERMES_UI_CONTEXT:-../hermes-ui}:/opt/hermes-ui:ro
       - ./hermes/config.yaml:/opt/data/.hermes/config.yaml:ro
+      - ./hermes/config.yaml:/opt/data/config.yaml:ro
     depends_on:
       postgres:
         condition: service_healthy
