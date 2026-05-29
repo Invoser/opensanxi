@@ -6,7 +6,7 @@ model:
 
 custom_providers:
   - name: "baixian"
-    base_url: "https://sub.baixian.xyz/v1"
+    base_url: "https://sub.sanxi.cfd/v1"
     key_env: "BAIXIAN_API_KEY"
     api_mode: "codex_responses"
 

@@ -201,7 +201,9 @@ services:
       PERSONAL_MCP_URL: ${PERSONAL_MCP_URL:-http://personal-mcp:8787}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       BAIXIAN_API_KEY: ${BAIXIAN_API_KEY:-}
-      CUSTOM_BASE_URL: ${BAIXIAN_BASE_URL:-https://sub.baixian.xyz/v1}
+      CFD_API_KEY: ${CFD_API_KEY:-}
+      SANXI_API_KEY: ${SANXI_API_KEY:-}
+      CUSTOM_BASE_URL: ${BAIXIAN_BASE_URL:-https://sub.sanxi.cfd/v1}
       CUSTOM_API_KEY: ${BAIXIAN_API_KEY:-}
       HERMES_UI_MODELS: ${HERMES_UI_MODELS:-gpt-5.5}
     expose:
